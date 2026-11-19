@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My LBX</title>
+<meta name="theme-color" content="#0c0e0b">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Owner's logbook for a Sur-Ron Light Bee X. Works offline; all data stays on this device.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My LBX">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#0c0e0b; --bg2:#121510; --card:#161a14; --card2:#1c2119;
+  --line:rgba(236,240,226,.07); --line2:rgba(236,240,226,.13);
+  --text:#eceee6; --muted:#8b9283; --dim:#5d6457;
+  --sage:#93a26a; --sage-d:#6f7d4c; --lime:#d6e26b; --gold:#c9a15a; --warn:#e0a458; --bad:#d9725f;
+  --r:16px;
+  /* Local-only font stacks: uses Michroma/Manrope if installed on the device, else the system font. No web fonts are downloaded. */
+  --wide:'Michroma','Avenir Next','Helvetica Neue',system-ui,-apple-system,sans-serif;
+  --body:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+  --sl:env(safe-area-inset-left,0px); --sr:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#070806;color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{overscroll-behavior-y:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+input,select,textarea{font:inherit;color:inherit}
+.app{max-width:440px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--bg);position:relative;overflow-x:hidden;padding-bottom:calc(32px + var(--sb));padding-left:var(--sl);padding-right:var(--sr)}@media(min-width:520px){.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:calc(10px + var(--st)) 14px 10px;background:linear-gradient(var(--bg) 70%,rgba(12,14,11,0))}
+.icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--text)}
+.icon-btn:hover{background:var(--card)}
+.brand{text-align:center;line-height:1.1}
+.brand .w{font-family:var(--wide);font-size:12px;letter-spacing:.32em;padding-left:.32em}
+.brand .s{font-size:10.5px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+.dot-status{width:40px;height:40px;display:grid;place-items:center}
+.dot-status i{width:8px;height:8px;border-radius:50%;background:var(--sage);box-shadow:0 0 0 4px rgba(147,162,106,.14)}
+.dot-status i.chg{background:var(--lime);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(214,226,107,.05)}}
+
+/* hero carousel */
+.hero{position:relative;margin-top:-4px}
+.track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;cursor:grab}
+.track::-webkit-scrollbar{display:none}
+.track.drag{cursor:grabbing;scroll-snap-type:none}
+.slide{flex:0 0 100%;scroll-snap-align:center;height:268px;display:grid;place-items:center;padding:6px 18px 22px;position:relative}
+.slide.stage{background:radial-gradient(70% 55% at 50% 58%,rgba(147,162,106,.16),transparent 70%)}
+.slide.stage::after{content:"";position:absolute;left:18%;right:18%;bottom:30px;height:16px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);z-index:0}
+.slide img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none;position:relative;z-index:1}
+.slide.photo img{border-radius:14px;max-height:232px}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:-8px}
+.dots button{width:6px;height:6px;border-radius:3px;background:var(--line2);transition:all .25s}
+.dots button.on{width:20px;background:var(--sage)}
+
+/* identity */
+.ident{padding:18px 20px 4px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.ident h1{margin:0;font-family:var(--wide);font-size:19px;font-weight:400;letter-spacing:.04em}
+.ident h1.ph{color:var(--dim)}
+.ident p{margin:5px 0 0;color:var(--muted);font-size:12.5px;letter-spacing:.04em}
+.chip{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--sage);border:1px solid rgba(147,162,106,.3);padding:5px 9px;border-radius:20px;white-space:nowrap}
+.chip.chg{color:var(--lime);border-color:rgba(214,226,107,.35)}
+
+/* tiles */
+.sec-h{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 10px}
+.sec-h h2{margin:0;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.sec-h small{font-size:11px;color:var(--dim)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;text-align:left;min-height:86px;display:flex;flex-direction:column;justify-content:space-between;transition:border-color .2s,background .2s}
+.tile:hover{border-color:var(--line2);background:var(--card2)}
+.tile .l{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.tile .l svg{color:var(--sage)}
+.tile .v{font-family:var(--wide);font-size:19px;margin-top:8px;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .v u{text-decoration:none;font-family:var(--body);font-size:11px;color:var(--muted);margin-left:3px;letter-spacing:.04em}
+.tile .s{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .s b{font-weight:600;color:var(--sage)}
+.tile .s b.warn{color:var(--warn)} .tile .s b.bad{color:var(--bad)} .tile .s b.lime{color:var(--lime)}
+.bar{height:3px;border-radius:2px;background:var(--line2);margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--sage-d),var(--sage));border-radius:2px;transition:width .5s}
+.bar i.chg{background:linear-gradient(90deg,var(--sage),var(--lime))}
+.bar i.low{background:var(--bad)}
+.edit-row{display:flex;justify-content:center;padding:12px 0 2px}
+.pen{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;letter-spacing:.08em;color:var(--muted);padding:8px 13px;border-radius:20px;border:1px solid var(--line)}
+.pen:hover{color:var(--text);border-color:var(--line2)}
+
+/* quick actions */
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px}
+.qa{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+.qa svg{color:var(--sage)} .qa:hover{color:var(--text);border-color:var(--line2)}
+
+/* lists */
+.list{padding:0 16px}
+.row{display:flex;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.row:last-child{border-bottom:0}
+.row .ic{width:34px;height:34px;border-radius:10px;background:var(--card);display:grid;place-items:center;color:var(--sage);flex:none}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t span{font-size:11.5px;color:var(--muted)}
+.row .r{font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.empty{color:var(--dim);font-size:12.5px;text-align:center;padding:22px 10px;border:1px dashed var(--line2);border-radius:14px;margin:0 16px}
+
+/* views */
+.view{display:none}.view.on{display:block;animation:fade .3s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+.page-h{padding:6px 20px 4px}
+.page-h h1{margin:0;font-family:var(--wide);font-size:17px;font-weight:400;letter-spacing:.05em}
+.page-h p{margin:6px 0 0;color:var(--muted);font-size:12.5px;line-height:1.5}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 18px;border-radius:12px;background:var(--sage);color:#10130d;font-weight:600;font-size:13px;letter-spacing:.03em}
+.btn:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line2)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid rgba(217,114,95,.35)}
+.btn.sm{height:34px;padding:0 13px;font-size:12px;border-radius:10px}
+.bar-actions{display:flex;gap:8px;padding:14px 16px 6px}
+.bar-actions .btn{flex:1}
+
+/* spec sheet */
+.specs{margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.spec{display:flex;justify-content:space-between;gap:14px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.spec:last-child{border-bottom:0}
+.spec span{color:var(--muted)}
+.spec b{font-weight:500;text-align:right}
+.spec b.ph{color:var(--dim);font-weight:400}
+.group-t{padding:18px 20px 8px;font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.hero-mini{height:150px;display:grid;place-items:center;margin:4px 0 0;background:radial-gradient(60% 60% at 50% 60%,rgba(147,162,106,.13),transparent 70%)}
+.hero-mini img{max-height:140px;max-width:80%}
+
+/* maintenance */
+.mt{margin:0 16px 8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.mt-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mt-top b{font-weight:500;font-size:13.5px}
+.mt-top em{font-style:normal;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:rgba(147,162,106,.12);color:var(--sage)}
+.mt-top em.soon{background:rgba(224,164,88,.12);color:var(--warn)}
+.mt-top em.due{background:rgba(217,114,95,.14);color:var(--bad)}
+.mt-meta{font-size:11.5px;color:var(--muted);margin-top:4px}
+.mt-act{display:flex;gap:8px;margin-top:10px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .3s;z-index:40;backdrop-filter:blur(2px)}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(300px,82vw);background:var(--bg2);border-right:1px solid var(--line);z-index:50;transform:translateX(-102%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding:calc(18px + var(--st)) 0 calc(18px + var(--sb))}
+@media(min-width:520px){.drawer{left:max(0px,calc(50% - 220px))}}
+.drawer.on{transform:none}
+.dr-h{padding:6px 22px 20px;border-bottom:1px solid var(--line)}
+.dr-h .w{font-family:var(--wide);font-size:13px;letter-spacing:.3em}
+.dr-h .n{font-size:12px;color:var(--muted);margin-top:6px}
+.nav{padding:10px 10px;flex:1;overflow:auto}
+.nav button{display:flex;align-items:center;gap:13px;width:100%;padding:11px 12px;border-radius:12px;font-size:14px;color:#c9cdc1;text-align:left}
+.nav button svg{color:var(--muted)}
+.nav button:hover{background:var(--card)}
+.nav button.on{background:var(--card2);color:var(--text)}
+.nav button.on svg{color:var(--sage)}
+.nav hr{border:0;border-top:1px solid var(--line);margin:10px 12px}
+.dr-f{padding:0 22px;font-size:10.5px;color:var(--dim);letter-spacing:.04em;line-height:1.5}
+
+/* sheet */
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;background:var(--bg2);border:1px solid var(--line2);border-bottom:0;border-radius:22px 22px 0 0;z-index:60;transform:translateY(105%);visibility:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s .35s;max-height:88vh;display:flex;flex-direction:column}
+.sheet.on{transform:none;visibility:visible;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--line2);margin:9px auto 4px}
+.sh-h{display:flex;justify-content:space-between;align-items:center;padding:6px 18px 10px}
+.sh-h h3{margin:0;font-family:var(--wide);font-weight:400;font-size:14px;letter-spacing:.05em}
+.sh-b{overflow:auto;padding:4px 18px 8px}
+.sh-f{display:flex;gap:8px;padding:12px 18px calc(16px + var(--sb));border-top:1px solid var(--line)}
+.sh-f .btn{flex:1}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--card);border:1px solid var(--line2);border-radius:11px;padding:11px 12px;font-size:14px;outline:none;color-scheme:dark}
+.fld textarea{min-height:76px;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--sage)}
+.fld .hint{font-size:11px;color:var(--dim);margin-top:5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;background:var(--card);border:1px solid var(--line2);border-radius:11px;padding:3px}
+.seg button{flex:1;padding:8px 4px;border-radius:8px;font-size:12.5px;color:var(--muted)}
+.seg button.on{background:var(--card2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line2)}
+.rangew{display:flex;align-items:center;gap:12px}
+.rangew input[type=range]{flex:1;accent-color:var(--sage);padding:0;border:0;background:none}
+.rangew output{font-family:var(--wide);font-size:15px;min-width:52px;text-align:right}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + var(--sb));transform:translate(-50%,20px);background:var(--card2);border:1px solid var(--line2);padding:10px 16px;border-radius:12px;font-size:12.5px;opacity:0;transition:all .3s;z-index:70;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.note{margin:12px 16px 0;font-size:11.5px;color:var(--dim);line-height:1.5}
+/* insights */
+.ins-filter{padding:14px 16px 4px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 16px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 11px 10px}
+.kpi .l{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--wide);font-size:16px;margin-top:7px;white-space:nowrap}
+.kpi .v u{text-decoration:none;font-family:var(--body);font-size:10.5px;color:var(--muted);margin-left:2px}
+.ccard{margin:10px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 10px}
+.ccard h3{margin:0;font-size:13.5px;font-weight:600}
+.ccard .sub{font-size:11.5px;color:var(--muted);margin:3px 0 8px}
+.ccard svg{display:block;overflow:visible}
+.ccard svg text{font-family:var(--body);font-size:10px;fill:var(--muted)}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin:2px 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw-c{width:9px;height:9px;border-radius:50%}.sw-s{width:9px;height:9px;border-radius:2px}
+.hbar{display:grid;grid-template-columns:62px 1fr 64px;align-items:center;gap:10px;padding:7px 0;font-size:12.5px}
+.hbar .trk{height:10px;border-radius:0 4px 4px 0;background:transparent;position:relative}
+.hbar .trk i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0}
+.hbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.insight{display:flex;gap:10px;align-items:flex-start;margin:10px 16px 0;padding:12px 14px;border-radius:14px;background:rgba(147,162,106,.07);border:1px solid rgba(147,162,106,.18);font-size:12.5px;line-height:1.5;color:#d3d7cb}
+.insight svg{flex:none;color:var(--sage);margin-top:2px}
+.insight .btn{margin-top:8px}
+details.dt{margin-top:6px}
+details.dt summary{font-size:11px;color:var(--dim);cursor:pointer;list-style:none;padding:4px 0}
+details.dt summary::-webkit-details-marker{display:none}
+details.dt summary::before{content:"▸ ";} details.dt[open] summary::before{content:"▾ "}
+details.dt table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px}
+details.dt td,details.dt th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;font-weight:400}
+details.dt th{color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+details.dt td:not(:first-child),details.dt th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.tip{position:fixed;z-index:80;pointer-events:none;background:#232920;border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.45;opacity:0;transition:opacity .12s;max-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.tip.on{opacity:1}
+.tip b{font-weight:600;display:block;color:var(--text)} .tip span{color:var(--muted)}
+.hit{fill:transparent;cursor:pointer}
+.hit:hover + .hl, .hl.on{opacity:1}
+.link-btn{font-size:11px;color:var(--sage);letter-spacing:.04em}
+textarea.backup{width:100%;min-height:110px;background:var(--card);border:1px solid var(--line2);border-radius:11px;padding:10px;font-size:11px;font-family:ui-monospace,monospace;color:var(--muted)}
+.drawer{padding-left:var(--sl)}
+.sheet{padding-left:var(--sl);padding-right:var(--sr);max-height:calc(88vh - var(--st));max-height:calc(88dvh - var(--st))}
+/* iOS Safari zooms the page when a focused field's text is under 16px; keep inputs at 16px on iOS only */
+@supports (-webkit-touch-callout:none){
+  .fld input,.fld select,.fld textarea,textarea.backup{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="icon-btn" id="menuBtn" aria-label="Open menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+    </button>
+    <div class="brand"><div class="w">SUR-RON</div><div class="s" id="topSub">Light Bee X</div></div>
+    <div class="dot-status" title="Status"><i id="statusDot"></i></div>
+  </header>
+
+  <!-- HOME -->
+  <section class="view on" id="v-home">
+    <div class="hero">
+      <div class="track" id="track">
+        <div class="slide stage"><img src="hero.png" alt="Sur-Ron Light Bee X, three-quarter view" draggable="false"></div>
+        <div class="slide stage"><img src="side.jpg" alt="Sur-Ron Light Bee X, side view" draggable="false" style="border-radius:14px;max-height:200px"></div>
+        <div class="slide photo"><img src="promo.jpg" alt="2025 Light Bee X spec poster" draggable="false"></div>
+      </div>
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <div class="ident">
+      <div>
+        <h1 id="bikeName">Name your bike</h1>
+        <p id="bikeSub">Light Bee X · 2025 · Sage Green</p>
+      </div>
+      <span class="chip" id="stateChip">Parked</span>
+    </div>
+
+    <div class="sec-h"><h2>Status</h2><small id="updatedAt"></small></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="edit-row">
+      <button class="pen" id="editStatus" aria-label="Edit status details">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h10a2 2 0 0 1 2 2v4"/><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/><path d="M7 8h6M7 12h4"/><path d="M20.5 12.5l1 1a1.4 1.4 0 0 1 0 2L16 21l-3 .5.5-3 5.5-5.5a1.4 1.4 0 0 1 2 0z"/></svg>
+        Edit details
+      </button>
+    </div>
+
+    <div class="sec-h"><h2>Quick log</h2></div>
+    <div class="quick">
+      <button class="qa" data-add="rides"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="5.5" cy="17" r="3.5"/><circle cx="18.5" cy="17" r="3.5"/><path d="M5.5 17l4-7h5l4 7M9 7h3"/></svg>Ride</button>
+      <button class="qa" data-add="charges"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L5 13h6l-1 9 8-11h-6l1-9z"/></svg>Charge</button>
+      <button class="qa" data-add="services"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4 2.5-2.5z"/></svg>Service</button>
+    </div>
+
+    <div class="sec-h"><h2>Recent activity</h2><button class="link-btn" data-nav="insights">See insights →</button></div>
+    <div id="recent"></div>
+  </section>
+
+  <!-- BIKE INFO -->
+  <section class="view" id="v-info">
+    <div class="hero-mini"><img src="hero.png" alt=""></div>
+    <div class="page-h"><h1 id="infoName">My Bike</h1><p>Everything about your bike in one place. Tap edit to change anything.</p></div>
+    <div class="bar-actions"><button class="btn ghost sm" id="editInfo">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M16.5 3.5l4 4L8 20H4v-4z"/></svg>Edit bike info</button></div>
+    <div id="infoBody"></div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="view" id="v-insights">
+    <div class="page-h"><h1>Insights</h1><p>Trends from your ride and charge logs. Hover or tap any bar or dot for details.</p></div>
+    <div class="ins-filter"><div class="seg" id="insRange">
+      <button type="button" data-r="30">30 days</button><button type="button" data-r="90" class="on">90 days</button><button type="button" data-r="365">1 year</button><button type="button" data-r="all">All</button>
+    </div></div>
+    <div id="insBody"></div>
+  </section>
+
+  <!-- LOG VIEWS -->
+  <section class="view" id="v-log">
+    <div class="page-h"><h1 id="logTitle"></h1><p id="logDesc"></p></div>
+    <div id="logStats"></div>
+    <div class="bar-actions"><button class="btn" id="logAdd">+ Add entry</button></div>
+    <div id="logList"></div>
+  </section>
+
+  <!-- MAINTENANCE -->
+  <section class="view" id="v-maint">
+    <div class="page-h"><h1>Maintenance</h1><p>Your service intervals, tracked against the odometer. "Mark done" stamps the current mileage.</p></div>
+    <div class="bar-actions"><button class="btn ghost sm" id="addMaint">+ Add item</button></div>
+    <div id="maintList"></div>
+    <p class="note">Starting intervals are placeholders, not factory numbers. Edit each one to match your owner's manual or your shop's advice.</p>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings">
+    <div class="page-h"><h1>Settings</h1><p id="syncState">Checking storage…</p></div>
+    <div class="group-t">Backup</div>
+    <div style="padding:0 16px">
+      <textarea class="backup" id="backupBox" spellcheck="false" placeholder="Paste a backup here to restore it"></textarea>
+      <div class="bar-actions" style="padding:10px 0 0">
+        <button class="btn ghost sm" id="copyBackup">Copy backup</button>
+        <button class="btn ghost sm" id="restoreBackup">Restore from box</button>
+      </div>
+      <div class="bar-actions" style="padding:8px 0 0">
+        <button class="btn ghost sm" id="saveFile">Save backup file</button>
+        <button class="btn ghost sm" id="openFile">Restore from file</button>
+        <input type="file" id="fileIn" accept=".json,application/json,text/plain" hidden>
+      </div>
+    </div>
+    <div class="group-t">Danger zone</div>
+    <div style="padding:0 16px"><button class="btn danger sm" id="resetAll">Erase all data</button></div>
+    <p class="note">This app never connects to the bike. Every number here is something you entered.</p>
+  </section>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<nav class="drawer" id="drawer" aria-label="Menu">
+  <div class="dr-h"><div class="w">SUR-RON</div><div class="n" id="drName">Light Bee X</div></div>
+  <div class="nav" id="nav"></div>
+  <div class="dr-f">Owner's logbook · No bike connection needed</div>
+</nav>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div class="sh-h"><h3 id="shTitle"></h3><button class="icon-btn" id="shClose" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <form class="sh-b" id="shBody"></form>
+  <div class="sh-f" id="shFoot"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtD=d=>{if(!d)return '';const x=new Date(d+'T00:00');return isNaN(x)?d:x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+const fmtShort=d=>{if(!d)return '';const x=new Date(d+'T00:00');return isNaN(x)?d:x.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:null};
+const fmtN=n=>n==null?'—':Number(n).toLocaleString('en-US',{maximumFractionDigits:1});
+const daysSince=d=>{if(!d)return null;const x=new Date(d+'T00:00');return Math.floor((Date.now()-x)/864e5)};
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+
+/* ---------- ICONS ---------- */
+const I={
+ batt:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2"/></svg>',
+ odo:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3.5 17a9 9 0 1 1 17 0"/><path d="M12 13l4-4"/></svg>',
+ range:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+ wrench:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4 2.5-2.5z"/></svg>',
+ tire:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>',
+ cal:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ bolt:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M13 2L5 13h6l-1 9 8-11h-6l1-9z"/></svg>',
+ ride:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5.5" cy="17" r="3.5"/><circle cx="18.5" cy="17" r="3.5"/><path d="M5.5 17l4-7h5l4 7M9 7h3"/></svg>',
+ tool:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4 2.5-2.5z"/></svg>',
+ part:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/></svg>',
+ note:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg>',
+ home:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+ info:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+ gear:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+ chart:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+ list:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>'
+};
+
+/* ---------- STATE ---------- */
+const DEFAULT=()=>({
+  v:1, updated:null,
+  info:{nickname:'',model:'Light Bee X',year:'2025',color:'Sage Green',purchaseDate:'',purchasedFrom:'',pricePaid:'',serial:'',
+    peakPower:'8 kW',torque:'266',battery:'60V 40Ah removable Li-ion (21700 cells)',topSpeed:'46.6 mph (75 km/h)',
+    rangeSpec:'~47 mi @ 25 mph (75 km @ 40 km/h)',weight:'125.6 lb (57 kg)',maxLoad:'220 lb (100 kg)',
+    tires:'70/100-19 front · 3.00-18 rear',suspension:'200 mm front fork travel · multi-link rear',charge:'20–80% in about 2 h',
+    frame:'Forged aluminum',modes:'Eco · Sport'},
+  status:{battery:100,charging:'idle',odometer:0,fullRange:47,tireF:'',tireR:'',mode:'Sport',lastService:'',lastServiceMi:''},
+  rides:[],charges:[],services:[],mods:[],notes:[],
+  maint:[
+    {id:'m1',name:'Chain clean & lube',interval:100,lastAt:null},
+    {id:'m2',name:'Chain tension check',interval:150,lastAt:null},
+    {id:'m3',name:'Bolt torque check',interval:150,lastAt:null},
+    {id:'m4',name:'Brake pads inspection',interval:300,lastAt:null},
+    {id:'m5',name:'Tire wear & pressure',interval:50,lastAt:null},
+    {id:'m6',name:'Suspension service',interval:1000,lastAt:null}
+  ]
+});
+let S=DEFAULT();
+const LS='surron-garage-v1';
+function merge(base,src){ if(!src||typeof src!=='object')return base; const out=Array.isArray(base)?[]:{...base};
+  for(const k in src){ if(base&&base[k]&&typeof base[k]==='object'&&!Array.isArray(base[k])&&typeof src[k]==='object'&&!Array.isArray(src[k])) out[k]=merge(base[k],src[k]); else out[k]=src[k]; } return out; }
+try{const raw=localStorage.getItem(LS); if(raw) S=merge(DEFAULT(),JSON.parse(raw));}catch(e){}
+
+/* ---------- LOCAL STORAGE (IndexedDB primary, localStorage mirror) ----------
+   Every save is written synchronously to localStorage (so nothing is lost if iOS
+   suspends the app mid-write) and then to IndexedDB. On launch, whichever copy has
+   the newer "updated" timestamp wins. Nothing ever leaves the device. */
+const IDB_NAME='lbx-garage', IDB_STORE='kv', IDB_KEY='garage';
+let idbP=null, storeState='checking', persisted=false, writing=false, pending=false, saveT=null;
+const isQuota=e=>!!e&&(e.name==='QuotaExceededError'||e.code===22||e.code===1014);
+const clone=o=>JSON.parse(JSON.stringify(o));
+function lsWorks(){try{const k=LS+'-test';localStorage.setItem(k,'1');localStorage.removeItem(k);return true}catch(e){return false}}
+function idb(){
+  if(idbP)return idbP;
+  idbP=new Promise((res,rej)=>{
+    if(!('indexedDB' in window)||!indexedDB)return rej(new Error('IndexedDB unavailable'));
+    let r; try{r=indexedDB.open(IDB_NAME,1)}catch(e){return rej(e)}
+    r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(IDB_STORE))r.result.createObjectStore(IDB_STORE)};
+    r.onsuccess=()=>{const db=r.result;db.onversionchange=()=>{db.close();idbP=null};db.onclose=()=>{idbP=null};res(db)};
+    r.onerror=()=>rej(r.error||new Error('IndexedDB open failed'));
+    r.onblocked=()=>rej(new Error('IndexedDB blocked'));
+  });
+  idbP.catch(()=>{idbP=null});
+  return idbP;
+}
+async function idbGet(){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readonly');const q=tx.objectStore(IDB_STORE).get(IDB_KEY);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+async function idbPut(v){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(v,IDB_KEY);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('aborted'))})}
+
+function save(){
+  S.updated=new Date().toISOString();
+  try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){if(isQuota(e))toast('Storage is full — export a backup and clear old logs')}
+  clearTimeout(saveT); saveT=setTimeout(flush,250);
+  render();
+}
+async function flush(){
+  clearTimeout(saveT);
+  if(writing){pending=true;return}
+  writing=true;
+  try{await idbPut(clone(S));storeState='idb'}
+  catch(e){
+    // one retry: iOS can close the connection when the app is backgrounded
+    idbP=null;
+    try{await idbPut(clone(S));storeState='idb'}
+    catch(e2){storeState=lsWorks()?'ls':'none'; if(isQuota(e2))toast('Storage is full — export a backup and clear old logs')}
+  }
+  writing=false; renderSync();
+  if(pending){pending=false;flush()}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
+window.addEventListener('pagehide',()=>flush());
+(async()=>{
+  try{
+    const v=await idbGet();
+    if(v&&typeof v==='object'&&v.status&&(!S.updated||(v.updated&&v.updated>S.updated))){
+      S=merge(DEFAULT(),v);
+      try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
+      render();
+    } else if(S.updated&&(!v||v.updated!==S.updated)) await idbPut(clone(S));
+    storeState='idb';
+  }catch(e){storeState=lsWorks()?'ls':'none'}
+  try{if(navigator.storage&&navigator.storage.persist)persisted=(await navigator.storage.persisted())||(await navigator.storage.persist())}catch(e){}
+  renderSync();
+})();
+function renderSync(){
+  const el=$('#syncState'); if(!el)return;
+  el.textContent=storeState==='idb'?'Saved on this device and works offline'+(persisted?' (protected storage)':'')+'. Nothing is synced to other devices, so save a backup now and then.'
+    :storeState==='ls'?'Saved on this device (basic storage) and works offline. Nothing is synced to other devices, so save a backup now and then.'
+    :storeState==='none'?'This browser is blocking storage (Private Browsing?). Changes will be lost when you close the app — save a backup.'
+    :'Checking storage…';
+}
+
+/* ---------- CAROUSEL ---------- */
+const track=$('#track'), dots=$('#dots'), N=track.children.length;
+for(let i=0;i<N;i++){const b=document.createElement('button');b.setAttribute('aria-label','Photo '+(i+1));b.onclick=()=>go(i);dots.appendChild(b)}
+function go(i){track.scrollTo({left:i*track.clientWidth,behavior:'smooth'})}
+function syncDots(){const i=Math.round(track.scrollLeft/track.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i))}
+track.addEventListener('scroll',()=>requestAnimationFrame(syncDots),{passive:true});
+track.scrollLeft=0; syncDots();
+// mouse drag (touch swipes are native)
+let dx=null,sl=0;
+track.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;dx=e.clientX;sl=track.scrollLeft;track.classList.add('drag')});
+window.addEventListener('pointermove',e=>{if(dx==null)return;track.scrollLeft=sl-(e.clientX-dx)});
+window.addEventListener('pointerup',e=>{if(dx==null)return;const moved=e.clientX-dx;dx=null;track.classList.remove('drag');
+  let i=Math.round(sl/track.clientWidth); if(moved<-40)i++; else if(moved>40)i--; i=Math.max(0,Math.min(N-1,i)); go(i)});
+document.addEventListener('keydown',e=>{if(current!=='home'||sheetOpen)return;const i=Math.round(track.scrollLeft/track.clientWidth);
+  if(e.key==='ArrowRight')go(Math.min(N-1,i+1)); if(e.key==='ArrowLeft')go(Math.max(0,i-1))});
+
+/* ---------- LOG SCHEMAS ---------- */
+const LOGS={
+ rides:{title:'Ride Log',desc:'Every ride you log adds its miles to the odometer and sets the battery to where you finished.',icon:I.ride,label:'Ride',
+  fields:[{k:'date',l:'Date',t:'date'},{k:'where',l:'Where',t:'text',ph:'Trail, park, track…'},
+   {k:'miles',l:'Distance (mi)',t:'number',half:1},{k:'duration',l:'Time (min)',t:'number',half:1},
+   {k:'battStart',l:'Battery start %',t:'number',half:1},{k:'battEnd',l:'Battery end %',t:'number',half:1},
+   {k:'mode',l:'Mode',t:'seg',opts:['Eco','Sport']},{k:'notes',l:'Notes',t:'area'}],
+  title1:e=>e.where||'Ride', meta:e=>[e.miles?fmtN(e.miles)+' mi':'',e.duration?e.duration+' min':'',e.mode||''].filter(Boolean).join(' · '),
+  right:e=>(e.battStart!=null&&e.battEnd!=null&&e.battStart!==''&&e.battEnd!=='')?(e.battStart-e.battEnd)+'% used':'',
+  apply:(e,isNew)=>{ if(isNew&&num(e.miles))S.status.odometer=+(num(S.status.odometer)||0)+num(e.miles); if(isNew&&num(e.battEnd)!=null){S.status.battery=num(e.battEnd);S.status.charging='idle'} },
+  stats:a=>{const mi=a.reduce((s,e)=>s+(num(e.miles)||0),0);const min=a.reduce((s,e)=>s+(num(e.duration)||0),0);return [['Rides',a.length],['Miles',fmtN(mi)],['Ride time',min>=60?(min/60).toFixed(1)+' h':min+' min']]}},
+ charges:{title:'Charging',desc:'Log each charge. The latest one updates the battery tile.',icon:I.bolt,label:'Charge',
+  fields:[{k:'date',l:'Date',t:'date'},{k:'from',l:'From %',t:'number',half:1},{k:'to',l:'To %',t:'number',half:1},
+   {k:'duration',l:'Time (min)',t:'number',half:1},{k:'charger',l:'Charger',t:'seg',opts:['Standard','Fast'],half:1},{k:'notes',l:'Notes',t:'area'}],
+  title1:e=>(e.from!==''&&e.from!=null?e.from+'%':'?')+' → '+(e.to!==''&&e.to!=null?e.to+'%':'?'), meta:e=>[e.duration?e.duration+' min':'',e.charger||''].filter(Boolean).join(' · '), right:()=>'',
+  apply:(e,isNew)=>{ if(isNew&&num(e.to)!=null){S.status.battery=num(e.to);S.status.charging=num(e.to)>=100?'full':'idle'} },
+  stats:a=>{const m=a.filter(e=>num(e.duration)).map(e=>num(e.duration));return [['Charges',a.length],['Avg time',m.length?Math.round(m.reduce((x,y)=>x+y,0)/m.length)+' min':'—'],['Last',a[0]?fmtShort(a[0].date):'—']]}},
+ services:{title:'Service History',desc:'Shop visits and work you do yourself. The newest entry sets "last serviced".',icon:I.tool,label:'Service',
+  fields:[{k:'date',l:'Date',t:'date'},{k:'work',l:'Work done',t:'text',ph:'Brake pads, chain, tune…'},
+   {k:'odo',l:'Odometer (mi)',t:'number',half:1},{k:'cost',l:'Cost ($)',t:'number',half:1},{k:'shop',l:'Shop / who',t:'text'},{k:'notes',l:'Notes',t:'area'}],
+  title1:e=>e.work||'Service', meta:e=>[e.shop||'',e.odo?fmtN(e.odo)+' mi':''].filter(Boolean).join(' · '), right:e=>e.cost?'$'+fmtN(e.cost):'',
+  apply:(e,isNew)=>{ if(!S.status.lastService||e.date>=S.status.lastService){S.status.lastService=e.date;if(num(e.odo)!=null)S.status.lastServiceMi=num(e.odo)} },
+  stats:a=>[['Services',a.length],['Spent','$'+fmtN(a.reduce((s,e)=>s+(num(e.cost)||0),0))],['Last',a[0]?fmtShort(a[0].date):'—']]},
+ mods:{title:'Mods & Parts',desc:'Upgrades, replacement parts and gear.',icon:I.part,label:'Part',
+  fields:[{k:'date',l:'Date',t:'date'},{k:'part',l:'Part / mod',t:'text',ph:'Handlebars, tires, controller…'},{k:'brand',l:'Brand',t:'text',half:1},{k:'cost',l:'Cost ($)',t:'number',half:1},{k:'notes',l:'Notes',t:'area'}],
+  title1:e=>e.part||'Part', meta:e=>e.brand||'', right:e=>e.cost?'$'+fmtN(e.cost):'',
+  stats:a=>[['Items',a.length],['Invested','$'+fmtN(a.reduce((s,e)=>s+(num(e.cost)||0),0))],['Latest',a[0]?fmtShort(a[0].date):'—']]},
+ notes:{title:'Notes',desc:'Anything else: settings you like, trails, reminders.',icon:I.note,label:'Note',
+  fields:[{k:'date',l:'Date',t:'date'},{k:'title',l:'Title',t:'text'},{k:'body',l:'Note',t:'area'}],
+  title1:e=>e.title||'Note', meta:e=>(e.body||'').slice(0,60), right:()=>''}
+};
+const sortLog=k=>S[k].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.t||0)-(a.t||0));
+
+/* ---------- TILES ---------- */
+function nextMaint(){ const odo=num(S.status.odometer)||0; let best=null;
+  S.maint.forEach(m=>{const iv=num(m.interval);if(!iv)return;const base=m.lastAt==null?0:num(m.lastAt);const left=base+iv-odo;if(!best||left<best.left)best={m,left}}); return best }
+function render(){
+  const st=S.status, info=S.info, b=Math.max(0,Math.min(100,num(st.battery)??0));
+  const name=info.nickname?.trim();
+  $('#bikeName').textContent=name||'Name your bike'; $('#bikeName').classList.toggle('ph',!name);
+  $('#bikeSub').textContent=[info.model,info.year,info.color].filter(Boolean).join(' · ');
+  $('#topSub').textContent=name||info.model; $('#drName').textContent=(name?name+' · ':'')+info.model;
+  $('#infoName').textContent=name||'My Bike';
+  const chg=st.charging==='charging';
+  const chip=$('#stateChip'); chip.textContent=chg?'Charging':st.charging==='full'?'Fully charged':'Parked'; chip.classList.toggle('chg',chg);
+  $('#statusDot').classList.toggle('chg',chg);
+  $('#updatedAt').textContent=S.updated?'Updated '+new Date(S.updated).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  const range=num(st.fullRange)?Math.round(num(st.fullRange)*b/100):null;
+  const nm=nextMaint(); const ds=daysSince(st.lastService);
+  const tiles=[
+    {k:'battery',ic:I.batt,l:'Battery',v:b+'<u>%</u>',s:chg?'<b class="lime">Charging</b>':st.charging==='full'?'<b>Full</b>':b<=20?'<b class="bad">Low</b> · plug in soon':'Not charging',bar:b},
+    {k:'odometer',ic:I.odo,l:'Odometer',v:fmtN(num(st.odometer)||0)+'<u>mi</u>',s:S.rides.length?S.rides.length+' rides logged':'Total distance'},
+    {k:'range',ic:I.range,l:'Est. range',v:(range??'—')+'<u>mi</u>',s:'At '+b+'% · '+(num(st.fullRange)||'—')+' mi full'},
+    {k:'maint',ic:I.wrench,l:'Next service',v:nm?(nm.left<=0?'Due':fmtN(nm.left)+'<u>mi</u>'):'—',s:nm?(nm.left<=0?'<b class="bad">'+esc(nm.m.name)+'</b>':nm.left<=nm.m.interval*.2?'<b class="warn">'+esc(nm.m.name)+'</b>':esc(nm.m.name)):'Add maintenance items',go:'maint'},
+    {k:'tires',ic:I.tire,l:'Tire pressure',v:(st.tireF||'—')+' / '+(st.tireR||'—')+'<u>psi</u>',s:'Front / Rear'},
+    {k:'service',ic:I.cal,l:'Last serviced',v:st.lastService?fmtShort(st.lastService):'—',s:ds==null?'Not logged yet':ds===0?'Today':ds+' days ago'}
+  ];
+  $('#tiles').innerHTML=tiles.map(t=>`<button class="tile" data-tile="${t.k}"${t.go?` data-go="${t.go}"`:''}>
+    <div class="l">${t.ic}${t.l}</div><div><div class="v">${t.v}</div>${t.bar!=null?`<div class="bar"><i class="${chg?'chg':t.bar<=20?'low':''}" style="width:${t.bar}%"></i></div>`:''}<div class="s">${t.s}</div></div></button>`).join('');
+  // recent
+  const all=[];['rides','charges','services','mods'].forEach(k=>S[k].forEach(e=>all.push({k,e})));
+  all.sort((a,b)=>(b.e.date||'').localeCompare(a.e.date||'')||(b.e.t||0)-(a.e.t||0));
+  $('#recent').innerHTML=all.length?'<div class="list">'+all.slice(0,4).map(({k,e})=>rowHTML(k,e)).join('')+'</div>':'<div class="empty">Nothing logged yet. Use Quick log after your next ride or charge.</div>';
+  renderNav(); if(current==='info')renderInfo(); if(LOGS[current])renderLog(current); if(current==='maint')renderMaint(); if(current==='insights')renderInsights();
+}
+function rowHTML(k,e){const L=LOGS[k];return `<button class="row" data-edit="${k}" data-id="${e.id}"><span class="ic">${L.icon}</span><span class="t"><b>${esc(L.title1(e))}</b><span>${esc(fmtD(e.date))}${L.meta(e)?' · '+esc(L.meta(e)):''}</span></span><span class="r">${esc(L.right(e))}</span></button>`}
+
+/* ---------- INFO ---------- */
+const INFO_GROUPS=[
+ ['Ownership',[['nickname','Name'],['model','Model'],['year','Model year'],['color','Color'],['purchaseDate','Purchased','date'],['purchasedFrom','Bought from'],['pricePaid','Price paid','money'],['serial','Serial / VIN']]],
+ ['Current',[['_odo','Current miles'],['_battery','Battery'],['_last','Last serviced'],['_lastMi','Serviced at']]],
+ ['Performance',[['peakPower','Peak power'],['torque','Wheel torque','nm'],['topSpeed','Top speed'],['rangeSpec','Rated range'],['modes','Ride modes']]],
+ ['Hardware',[['battery','Battery pack'],['charge','Charge time'],['weight','Weight'],['maxLoad','Max load'],['tires','Tires'],['suspension','Suspension'],['frame','Frame']]]
+];
+function infoVal(k,type){const st=S.status;
+  if(k==='_odo')return fmtN(num(st.odometer)||0)+' mi'; if(k==='_battery')return (st.battery??'—')+'%';
+  if(k==='_last')return st.lastService?fmtD(st.lastService):''; if(k==='_lastMi')return st.lastServiceMi!==''&&st.lastServiceMi!=null?fmtN(st.lastServiceMi)+' mi':'';
+  const v=S.info[k]; if(!v)return ''; if(type==='date')return fmtD(v); if(type==='money')return '$'+fmtN(v); if(type==='nm')return v+' N·m'; return v}
+function renderInfo(){
+  const own=S.info.purchaseDate?daysSince(S.info.purchaseDate):null;
+  $('#infoBody').innerHTML=INFO_GROUPS.map(([g,rows])=>`<div class="group-t">${g}</div><div class="specs">${rows.map(([k,l,t])=>{const v=infoVal(k,t);return `<div class="spec"><span>${l}</span><b class="${v?'':'ph'}">${v?esc(v):'Not set'}</b></div>`}).join('')}${g==='Ownership'&&own!=null&&own>=0?`<div class="spec"><span>Owned for</span><b>${own>=365?(own/365).toFixed(1)+' years':own+' days'}</b></div>`:''}</div>`).join('')
+   +'<p class="note">Factory specs are pre-filled from published 2025 Light Bee X numbers. Change anything that\'s different on your bike.</p>';
+}
+
+/* ---------- LOG VIEW ---------- */
+function renderLog(k){const L=LOGS[k];sortLog(k);
+  $('#logTitle').textContent=L.title; $('#logDesc').textContent=L.desc; $('#logAdd').textContent='+ Add '+L.label.toLowerCase();
+  $('#logStats').innerHTML=L.stats?'<div class="tiles" style="grid-template-columns:repeat(3,1fr);margin-top:14px">'+L.stats(S[k]).map(([a,b])=>`<div class="tile" style="min-height:66px;cursor:default"><div class="l">${a}</div><div class="v" style="font-size:15px">${b}</div></div>`).join('')+'</div>':'';
+  $('#logList').innerHTML=S[k].length?'<div class="list">'+S[k].map(e=>rowHTML(k,e)).join('')+'</div>':'<div class="empty">No entries yet.</div>';
+}
+
+/* ---------- MAINTENANCE ---------- */
+function renderMaint(){const odo=num(S.status.odometer)||0;
+  $('#maintList').innerHTML=S.maint.length?S.maint.map(m=>{const iv=num(m.interval)||0;const base=m.lastAt==null?0:num(m.lastAt);const left=base+iv-odo;
+    const cls=left<=0?'due':left<=iv*.2?'soon':''; const tag=left<=0?'Due now':left<=iv*.2?'Soon':'OK';
+    return `<div class="mt"><div class="mt-top"><b>${esc(m.name)}</b><em class="${cls}">${tag}</em></div>
+     <div class="mt-meta">Every ${fmtN(iv)} mi · ${m.lastAt==null?'never marked done':'last at '+fmtN(m.lastAt)+' mi'} · ${left<=0?fmtN(-left)+' mi over':fmtN(left)+' mi left'}</div>
+     <div class="bar"><i class="${cls==='due'?'low':''}" style="width:${iv?Math.max(0,Math.min(100,(odo-base)/iv*100)):0}%"></i></div>
+     <div class="mt-act"><button class="btn sm" data-done="${m.id}">Mark done</button><button class="btn ghost sm" data-medit="${m.id}">Edit</button></div></div>`}).join(''):'<div class="empty">No items.</div>';
+}
+
+/* ---------- NAV ---------- */
+let current='home';
+const NAV=[['home','Overview',I.home],['info','Bike Info',I.info],['insights','Insights',I.chart],null,['rides','Ride Log',I.ride.replace(/17/g,'18')],['charges','Charging',I.bolt.replace(/17/g,'18')],['services','Service History',I.tool.replace(/17/g,'18')],['maint','Maintenance',I.list],['mods','Mods & Parts',I.part.replace(/17/g,'18')],['notes','Notes',I.note.replace(/17/g,'18')],null,['settings','Settings',I.gear]];
+function renderNav(){$('#nav').innerHTML=NAV.map(n=>n?`<button data-nav="${n[0]}" class="${n[0]===current?'on':''}">${n[2]}${n[1]}</button>`:'<hr>').join('')}
+function show(v){current=v;document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  const id=LOGS[v]?'v-log':'v-'+v; $('#'+id).classList.add('on'); closeDrawer(); window.scrollTo(0,0);
+  try{history.replaceState(null,'',v==='home'?location.pathname+location.search:'#'+v)}catch(e){}
+  render(); if(v==='settings'){renderSync();$('#backupBox').value=''} if(v==='home')requestAnimationFrame(syncDots)}
+function openDrawer(){$('#drawer').classList.add('on');$('#scrim').classList.add('on')}
+function closeDrawer(){$('#drawer').classList.remove('on');if(!sheetOpen)$('#scrim').classList.remove('on')}
+$('#menuBtn').onclick=openDrawer;
+$('#scrim').onclick=()=>{closeDrawer();closeSheet()};
+
+/* ---------- SHEET / FORMS ---------- */
+let sheetOpen=false;
+function fieldHTML(f,val){const v=val??'';
+  if(f.t==='seg')return `<div class="fld"><label>${f.l}</label><div class="seg" data-seg="${f.k}">${f.opts.map(o=>`<button type="button" data-v="${esc(o.v??o)}" class="${String(v)===String(o.v??o)?'on':''}">${esc(o.l??o)}</button>`).join('')}</div><input type="hidden" name="${f.k}" value="${esc(v)}"></div>`;
+  if(f.t==='range')return `<div class="fld"><label>${f.l}</label><div class="rangew"><input type="range" name="${f.k}" min="0" max="100" value="${esc(v||0)}" oninput="this.nextElementSibling.value=this.value+'%'"><output>${esc(v||0)}%</output></div></div>`;
+  if(f.t==='area')return `<div class="fld"><label>${f.l}</label><textarea name="${f.k}" placeholder="${esc(f.ph||'')}">${esc(v)}</textarea></div>`;
+  return `<div class="fld"><label>${f.l}</label><input name="${f.k}" type="${f.t==='number'?'number':f.t==='date'?'date':'text'}" ${f.t==='number'?'inputmode="decimal" step="any"':''} value="${esc(v)}" placeholder="${esc(f.ph||'')}">${f.hint?`<div class="hint">${f.hint}</div>`:''}</div>`}
+function formHTML(fields,data){let out='',buf=[];
+  fields.forEach(f=>{const h=fieldHTML(f,data[f.k]); if(f.half){buf.push(h);if(buf.length===2){out+='<div class="two">'+buf.join('')+'</div>';buf=[]}} else {if(buf.length){out+='<div class="two">'+buf.join('')+'</div>';buf=[]} out+=h}});
+  if(buf.length)out+='<div class="two">'+buf.join('')+'</div>'; return out}
+function openSheet(title,fields,data,onSave,onDelete){
+  $('#shTitle').textContent=title; $('#shBody').innerHTML=formHTML(fields,data);
+  $('#shFoot').innerHTML=(onDelete?'<button class="btn danger" id="shDel" style="flex:0 0 auto">Delete</button>':'')+'<button class="btn" id="shSave">Save</button>';
+  $('#shBody').querySelectorAll('[data-seg]').forEach(sg=>sg.onclick=e=>{const b=e.target.closest('button');if(!b)return;sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));sg.nextElementSibling.value=b.dataset.v});
+  const collect=()=>{const o={};fields.forEach(f=>{const el=$('#shBody').elements[f.k];let v=el?el.value.trim():'';if((f.t==='number'||f.t==='range')&&v!=='')v=num(v);o[f.k]=v});return o};
+  $('#shSave').onclick=()=>{onSave(collect());closeSheet()};
+  if(onDelete){let armed=false;$('#shDel').onclick=()=>{if(!armed){armed=true;$('#shDel').textContent='Tap again to delete';return}onDelete();closeSheet()}}
+  $('#shBody').onsubmit=e=>{e.preventDefault();$('#shSave').click()};
+  $('#sheet').classList.add('on');$('#scrim').classList.add('on');sheetOpen=true;
+}
+function closeSheet(){$('#sheet').classList.remove('on');sheetOpen=false;if(!$('#drawer').classList.contains('on'))$('#scrim').classList.remove('on')}
+$('#shClose').onclick=closeSheet;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet();closeDrawer()}});
+
+const STATUS_FIELDS=[
+ {k:'battery',l:'Battery level',t:'range'},
+ {k:'charging',l:'Charging',t:'seg',opts:[{v:'idle',l:'Not charging'},{v:'charging',l:'Charging'},{v:'full',l:'Full'}]},
+ {k:'odometer',l:'Odometer (mi)',t:'number',half:1},{k:'fullRange',l:'Full-charge range (mi)',t:'number',half:1},
+ {k:'tireF',l:'Front tire (psi)',t:'number',half:1},{k:'tireR',l:'Rear tire (psi)',t:'number',half:1},
+ {k:'mode',l:'Ride mode',t:'seg',opts:['Eco','Sport']},
+ {k:'lastService',l:'Last serviced',t:'date',half:1},{k:'lastServiceMi',l:'Serviced at (mi)',t:'number',half:1}
+];
+function editStatus(only){const f=only?STATUS_FIELDS.filter(x=>only.includes(x.k)):STATUS_FIELDS;
+  openSheet(only?'Update':'Edit details',f,S.status,o=>{Object.assign(S.status,o);save();toast('Saved')})}
+$('#editStatus').onclick=()=>editStatus();
+const TILE_EDIT={battery:['battery','charging'],odometer:['odometer'],range:['fullRange','battery'],tires:['tireF','tireR'],service:['lastService','lastServiceMi']};
+$('#tiles').onclick=e=>{const t=e.target.closest('.tile');if(!t)return;if(t.dataset.go)return show(t.dataset.go);editStatus(TILE_EDIT[t.dataset.tile])};
+
+const INFO_FIELDS=[{k:'nickname',l:'Bike name',t:'text',ph:'Give it a name'},{k:'model',l:'Model',t:'text',half:1},{k:'year',l:'Year',t:'text',half:1},{k:'color',l:'Color',t:'text',half:1},{k:'purchaseDate',l:'Purchase date',t:'date',half:1},
+ {k:'purchasedFrom',l:'Bought from',t:'text',half:1},{k:'pricePaid',l:'Price paid ($)',t:'number',half:1},{k:'serial',l:'Serial / VIN',t:'text'},
+ {k:'peakPower',l:'Peak power',t:'text',half:1},{k:'torque',l:'Wheel torque (N·m)',t:'number',half:1},{k:'topSpeed',l:'Top speed',t:'text'},{k:'rangeSpec',l:'Rated range',t:'text'},
+ {k:'battery',l:'Battery pack',t:'text'},{k:'charge',l:'Charge time',t:'text'},{k:'weight',l:'Weight',t:'text',half:1},{k:'maxLoad',l:'Max load',t:'text',half:1},
+ {k:'tires',l:'Tires',t:'text'},{k:'suspension',l:'Suspension',t:'text'},{k:'frame',l:'Frame',t:'text',half:1},{k:'modes',l:'Ride modes',t:'text',half:1}];
+$('#editInfo').onclick=()=>openSheet('Bike info',INFO_FIELDS,S.info,o=>{Object.assign(S.info,o);save();toast('Bike info saved')});
+
+function addEntry(k){const L=LOGS[k];const d={date:today()};if(k==='rides'){d.mode=S.status.mode;d.battStart=S.status.battery}if(k==='charges'){d.from=S.status.battery;d.to=100;d.charger='Standard'}if(k==='services')d.odo=S.status.odometer;
+  openSheet('New '+L.label.toLowerCase(),L.fields,d,o=>{const e={id:uid(),t:Date.now(),...o};S[k].push(e);L.apply&&L.apply(e,true);sortLog(k);save();toast(L.label+' logged')})}
+function editEntry(k,id){const L=LOGS[k];const e=S[k].find(x=>x.id===id);if(!e)return;
+  openSheet('Edit '+L.label.toLowerCase(),L.fields,e,o=>{Object.assign(e,o);L.apply&&L.apply(e,false);save();toast('Updated')},()=>{S[k]=S[k].filter(x=>x.id!==id);save();toast('Deleted')})}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-add]'); if(a)return addEntry(a.dataset.add);
+  const r=e.target.closest('[data-edit]'); if(r)return editEntry(r.dataset.edit,r.dataset.id);
+  const n=e.target.closest('[data-nav]'); if(n)return show(n.dataset.nav);
+  const d=e.target.closest('[data-done]'); if(d){const m=S.maint.find(x=>x.id===d.dataset.done);m.lastAt=num(S.status.odometer)||0;save();toast(m.name+' marked done');return}
+  const me=e.target.closest('[data-medit]'); if(me)return editMaint(me.dataset.medit);
+});
+$('#logAdd').onclick=()=>addEntry(current);
+const MF=[{k:'name',l:'Item',t:'text'},{k:'interval',l:'Every (mi)',t:'number',half:1},{k:'lastAt',l:'Last done at (mi)',t:'number',half:1}];
+function editMaint(id){const m=S.maint.find(x=>x.id===id);openSheet('Maintenance item',MF,m,o=>{Object.assign(m,o);if(o.lastAt==='')m.lastAt=null;save()},()=>{S.maint=S.maint.filter(x=>x.id!==id);save()})}
+$('#addMaint').onclick=()=>openSheet('New maintenance item',MF,{interval:100},o=>{S.maint.push({id:uid(),...o,lastAt:o.lastAt===''?null:o.lastAt});save()});
+
+
+/* ---------- INSIGHTS ---------- */
+const C_ECO='#4c94c8', C_SPORT='#b98322', C_ONE='#93a26a', SURF='#161a14';
+let insRange='90';
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const pd=s=>new Date(s+'T00:00');
+const inRange=d=>{if(!d)return false;if(insRange==='all')return true;const n=daysSince(d);return n!=null&&n<=+insRange};
+const byDate=(a,b)=>(a.date||'').localeCompare(b.date||'')||(a.t||0)-(b.t||0);
+function niceMax(v){if(!(v>0))return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const m=v/p;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
+const r1=n=>Math.round(n*10)/10;
+function tipAttr(title,lines){return `data-tip="${esc(JSON.stringify([title,lines]))}"`}
+function cw(){const el=$('#insBody');return Math.max(260,(el.clientWidth||408)-32-28)}
+function grid(W,H,pl,pt,pb,max,unit){let g='';const m=max/Math.pow(10,Math.floor(Math.log10(max))),n=Math.abs(m-2)<1e-9?4:5;for(let i=0;i<=n;i++){const v=max*i/n,y=pt+(H-pt-pb)*(1-i/n);
+  g+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="rgba(236,240,226,${i?0.06:0.14})"/>`+(i%2===0||i===n||n===4?`<text x="${pl-6}" y="${y+3}" text-anchor="end">${r1(v)}${i===n&&unit?unit:''}</text>`:'')}return g}
+function barChart(items,unit){const W=cw(),H=170,pl=34,pt=10,pb=22,ph=H-pt-pb;
+  const max=niceMax(Math.max(...items.map(i=>i.v),0));const slot=(W-pl)/items.length;const bw=Math.max(4,Math.min(22,slot-2));
+  const step=Math.ceil(items.length/7);let s=grid(W,H,pl,pt,pb,max,unit);
+  items.forEach((it,i)=>{const x=pl+slot*i+(slot-bw)/2,h=it.v/max*ph,y0=pt+ph,y=y0-h,r=Math.min(4,bw/2,h);
+    if(h>0)s+=`<path d="M${x},${y0}V${y+r}Q${x},${y} ${x+r},${y}H${x+bw-r}Q${x+bw},${y} ${x+bw},${y+r}V${y0}Z" fill="${C_ONE}"/>`;
+    if(i%step===0)s+=`<text x="${x+bw/2}" y="${H-6}" text-anchor="middle">${esc(it.lab)}</text>`;
+    s+=`<rect class="hit" x="${pl+slot*i}" y="${pt}" width="${slot}" height="${ph}" ${tipAttr(it.full,it.tip)}/>`});
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">${s}</svg>`}
+function dotChart(pts,unit,opt={}){const W=cw(),H=170,pl=34,pt=12,pb=22,ph=H-pt-pb,pr=8;
+  const max=niceMax(Math.max(...pts.map(p=>p.y),0)*1.1);const ts=pts.map(p=>pd(p.date).getTime());const t0=Math.min(...ts),t1=Math.max(...ts);
+  const n=pts.length;const X=(p,i)=>t1===t0?pl+(W-pl-pr)*(n===1?.5:i/(n-1)):pl+(W-pl-pr)*(pd(p.date).getTime()-t0)/(t1-t0);
+  // spread same-day points by index if scale collapses
+  const xs=pts.map((p,i)=>X(p,i));const Y=v=>pt+ph*(1-v/max);
+  let s=grid(W,H,pl,pt,pb,max,unit);
+  if(opt.avg!=null){const y=Y(opt.avg);s+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="rgba(236,240,226,.35)" stroke-dasharray="3 4"/><text x="${pl+4}" y="${y-5}" style="fill:#c9cdc1">avg ${r1(opt.avg)}</text>`}
+  if(n>1)s+=`<polyline points="${pts.map((p,i)=>xs[i]+','+Y(p.y)).join(' ')}" fill="none" stroke="${opt.line||'rgba(236,240,226,.22)'}" stroke-width="2" stroke-linejoin="round"/>`;
+  pts.forEach((p,i)=>{const x=xs[i],y=Y(p.y),c=p.color||C_ONE;
+    s+=p.shape==='sq'?`<rect x="${x-4.5}" y="${y-4.5}" width="9" height="9" rx="1.5" fill="${c}" stroke="${SURF}" stroke-width="2"/>`:`<circle cx="${x}" cy="${y}" r="4.5" fill="${c}" stroke="${SURF}" stroke-width="2"/>`;
+    s+=`<circle class="hit" cx="${x}" cy="${y}" r="14" ${tipAttr(p.title,p.tip)}/>`});
+  const fl=pts[0],ll=pts[n-1];
+  s+=`<text x="${xs[0]}" y="${H-6}" text-anchor="${n>1?'start':'middle'}">${esc(fmtShort(fl.date))}</text>`;
+  if(n>1&&ll.date!==fl.date)s+=`<text x="${xs[n-1]}" y="${H-6}" text-anchor="end">${esc(fmtShort(ll.date))}</text>`;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">${s}</svg>`}
+function table(head,rows){return `<details class="dt"><summary>View data</summary><table><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table></details>`}
+const IDEA='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg>';
+function renderInsights(){
+  const rides=S.rides.filter(e=>inRange(e.date)).sort(byDate), charges=S.charges.filter(e=>inRange(e.date)).sort(byDate);
+  const out=[];
+  const miles=rides.reduce((a,e)=>a+(num(e.miles)||0),0), mins=rides.reduce((a,e)=>a+(num(e.duration)||0),0);
+  const withMi=rides.filter(e=>num(e.miles)>0);
+  const eff=withMi.filter(e=>num(e.battStart)!=null&&num(e.battEnd)!=null&&num(e.battStart)>num(e.battEnd)).map(e=>{const used=num(e.battStart)-num(e.battEnd),mi=num(e.miles);return {...e,used,mi,per10:mi/used*10,pctMi:used/mi}});
+  const totUsed=eff.reduce((a,e)=>a+e.used,0), totEffMi=eff.reduce((a,e)=>a+e.mi,0);
+  const pctPerMi=totEffMi?totUsed/totEffMi:null, realRange=pctPerMi?Math.round(100/pctPerMi):null;
+  const chg=charges.filter(e=>num(e.from)!=null&&num(e.to)!=null&&num(e.to)>num(e.from)&&num(e.duration)>0).map(e=>({...e,gain:num(e.to)-num(e.from),rate:(num(e.to)-num(e.from))/num(e.duration)*60}));
+  const avgRate=chg.length?chg.reduce((a,e)=>a+e.gain,0)/chg.reduce((a,e)=>a+num(e.duration),0)*60:null;
+  const k=(l,v,u)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}${u?`<u>${u}</u>`:''}</div></div>`;
+  out.push(`<div class="kpis">${k('Miles',fmtN(r1(miles)),'mi')}${k('Rides',rides.length)}${k('Avg ride',withMi.length?fmtN(r1(miles/withMi.length)):'—','mi')}${k('Real range',realRange??'—','mi')}${k('Battery use',pctPerMi?r1(pctPerMi):'—','%/mi')}${k('Charge speed',avgRate?Math.round(avgRate):'—','%/h')}</div>`);
+  if(!rides.length&&!charges.length){out.push(`<div class="empty" style="margin-top:14px">No rides or charges in this time range yet. Log a few with distance, battery start/end and time, and your charts appear here.</div>`);$('#insBody').innerHTML=out.join('');return}
+  // insights
+  if(realRange){const cur=num(S.status.fullRange);out.push(`<div class="insight">${IDEA}<div>Based on ${eff.length} ride${eff.length>1?'s':''}, you use about <b>${r1(pctPerMi)}% battery per mile</b>, so a full charge gets you roughly <b>${realRange} mi</b> the way you ride.${cur&&Math.abs(cur-realRange)>=2?`<br><button class="btn ghost sm" id="useReal">Use ${realRange} mi for range estimates</button>`:''}</div></div>`)}
+  const eco=eff.filter(e=>e.mode==='Eco'),sport=eff.filter(e=>e.mode==='Sport');
+  const avgPer10=a=>a.reduce((x,e)=>x+e.mi,0)/a.reduce((x,e)=>x+e.used,0)*10;
+  if(eco.length&&sport.length){const pe=1/avgPer10(eco),ps=1/avgPer10(sport);const d=Math.round((ps/pe-1)*100);
+    out.push(`<div class="insight">${IDEA}<div>Sport mode uses <b>${Math.abs(d)}% ${d>=0?'more':'less'}</b> battery per mile than Eco on your rides.</div></div>`)}
+  // chart 1: miles over time
+  if(withMi.length){let buckets=[],monthly=insRange==='all'||insRange==='365';
+    const end=new Date();
+    if(monthly){const first=pd(withMi[0].date);let d=new Date(first.getFullYear(),first.getMonth(),1);if(insRange==='365')d=new Date(end.getFullYear(),end.getMonth()-11,1);
+      const lim=new Date(end.getFullYear(),end.getMonth(),1);if((lim.getFullYear()-d.getFullYear())*12+lim.getMonth()-d.getMonth()>23)d=new Date(end.getFullYear(),end.getMonth()-23,1);
+      while(d<=lim){buckets.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),lab:d.toLocaleDateString('en-US',{month:'short'}),full:d.toLocaleDateString('en-US',{month:'long',year:'numeric'}),v:0,n:0});d=new Date(d.getFullYear(),d.getMonth()+1,1)}
+      withMi.forEach(e=>{const b=buckets.find(b=>b.key===e.date.slice(0,7));if(b){b.v+=num(e.miles);b.n++}})}
+    else{const sow=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-(x.getDay()+6)%7);return x};
+      let d=sow(new Date(end.getTime()-(+insRange)*864e5));const lim=sow(end);
+      while(d<=lim){const e2=new Date(d);e2.setDate(e2.getDate()+6);buckets.push({key:iso(d),end:iso(e2),lab:fmtShort(iso(d)),full:'Week of '+fmtShort(iso(d)),v:0,n:0});d=new Date(d);d.setDate(d.getDate()+7)}
+      withMi.forEach(e=>{const b=buckets.find(b=>e.date>=b.key&&e.date<=b.end);if(b){b.v+=num(e.miles);b.n++}})}
+    buckets.forEach(b=>{b.v=r1(b.v);b.tip=[fmtN(b.v)+' mi',b.n+' ride'+(b.n===1?'':'s')]});
+    out.push(`<div class="ccard"><h3>Miles ${monthly?'per month':'per week'}</h3><div class="sub">How much you're riding</div>${barChart(buckets,' mi')}${table([monthly?'Month':'Week','Miles','Rides'],buckets.map(b=>[b.full,fmtN(b.v),b.n]))}</div>`)}
+  // chart 2: efficiency per ride
+  if(eff.length){const hasEco=eff.some(e=>e.mode==='Eco'),hasSport=eff.some(e=>e.mode==='Sport');
+    const pts=eff.map(e=>({date:e.date,y:r1(e.per10),color:e.mode==='Eco'?C_ECO:e.mode==='Sport'?C_SPORT:C_ONE,shape:e.mode==='Sport'?'sq':'c',title:(e.where||'Ride')+' · '+fmtShort(e.date),tip:[r1(e.per10)+' mi per 10% battery',e.mi+' mi on '+e.used+'%',e.mode||'']}));
+    out.push(`<div class="ccard"><h3>Efficiency per ride</h3><div class="sub">Miles per 10% of battery — higher is better</div>
+      <div class="legend">${hasEco?`<span><i class="sw-c" style="background:${C_ECO}"></i>Eco</span>`:''}${hasSport?`<span><i class="sw-s" style="background:${C_SPORT}"></i>Sport</span>`:''}</div>
+      ${dotChart(pts,'',{avg:totEffMi/totUsed*10})}${table(['Ride','Mode','Miles','Used','Mi/10%'],eff.slice().reverse().map(e=>[fmtShort(e.date)+(e.where?' · '+e.where:''),e.mode||'—',e.mi,e.used+'%',r1(e.per10)]))}</div>`);
+    if(eco.length&&sport.length){const a=avgPer10(eco),b=avgPer10(sport),m=Math.max(a,b);
+      out.push(`<div class="ccard"><h3>Eco vs Sport</h3><div class="sub">Average miles per 10% battery</div>
+        <div class="hbar" ${tipAttr('Eco',[r1(a)+' mi per 10%',eco.length+' rides'])}><span style="display:flex;align-items:center;gap:6px"><i class="sw-c" style="background:${C_ECO}"></i>Eco</span><div class="trk"><i style="width:${a/m*100}%;background:${C_ECO}"></i></div><b>${r1(a)} mi</b></div>
+        <div class="hbar" ${tipAttr('Sport',[r1(b)+' mi per 10%',sport.length+' rides'])}><span style="display:flex;align-items:center;gap:6px"><i class="sw-s" style="background:${C_SPORT}"></i>Sport</span><div class="trk"><i style="width:${b/m*100}%;background:${C_SPORT}"></i></div><b>${r1(b)} mi</b></div></div>`)}
+  } else if(rides.length) out.push(`<div class="ccard"><h3>Efficiency per ride</h3><div class="sub">Add distance plus battery start and end % to your rides to see how far each 10% of battery takes you.</div></div>`);
+  // chart 3: ride length trend
+  if(withMi.length>1){const pts=withMi.map(e=>({date:e.date,y:num(e.miles),title:(e.where||'Ride')+' · '+fmtShort(e.date),tip:[fmtN(e.miles)+' mi',e.duration?e.duration+' min':'',num(e.duration)?r1(num(e.miles)/num(e.duration)*60)+' mph avg':''].filter(Boolean)}));
+    out.push(`<div class="ccard"><h3>Ride distance</h3><div class="sub">Each ride, in miles</div>${dotChart(pts,' mi',{line:'rgba(147,162,106,.55)'})}</div>`)}
+  // chart 4: charging
+  if(chg.length){const pts=chg.map(e=>({date:e.date,y:Math.round(e.rate),title:'Charge · '+fmtShort(e.date),tip:[Math.round(e.rate)+'% per hour',e.from+'% → '+e.to+'% in '+e.duration+' min',e.charger||'']}));
+    out.push(`<div class="ccard"><h3>Charging speed</h3><div class="sub">Percent gained per hour, each charge</div>${dotChart(pts,'',{avg:avgRate,line:'rgba(147,162,106,.55)'})}${table(['Date','From','To','Min','%/h'],chg.slice().reverse().map(e=>[fmtShort(e.date),e.from+'%',e.to+'%',e.duration,Math.round(e.rate)]))}</div>`);
+    if(chg.length>=3){const fast=chg.filter(e=>e.charger==='Fast'),std=chg.filter(e=>e.charger!=='Fast');
+      if(fast.length&&std.length){const fr=fast.reduce((a,e)=>a+e.rate,0)/fast.length,sr=std.reduce((a,e)=>a+e.rate,0)/std.length;
+        out.push(`<div class="insight">${IDEA}<div>Your fast charger averages <b>${Math.round(fr)}%/h</b> vs <b>${Math.round(sr)}%/h</b> on the standard one.</div></div>`)}}
+  } else if(charges.length) out.push(`<div class="ccard"><h3>Charging speed</h3><div class="sub">Add from %, to % and time to your charges to chart charging speed.</div></div>`);
+  out.push('<div style="height:8px"></div>');
+  $('#insBody').innerHTML=out.join('');
+  const u=$('#useReal');if(u)u.onclick=()=>{S.status.fullRange=realRange;save();toast('Range estimate updated')};
+}
+$('#insRange').onclick=e=>{const b=e.target.closest('button');if(!b)return;insRange=b.dataset.r;$('#insRange').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderInsights()};
+let rzT;window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(current==='insights')renderInsights()},150)});
+// tooltip
+const tip=document.createElement('div');tip.className='tip';document.body.appendChild(tip);
+function showTip(el,x,y){try{const [t,l]=JSON.parse(el.dataset.tip);tip.innerHTML=`<b>${esc(t)}</b>${l.filter(Boolean).map(s=>`<span>${esc(s)}</span>`).join('<br>')}`}catch(e){return}
+  tip.classList.add('on');const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(innerWidth-w-8,x-w/2))+'px';tip.style.top=(y-h-14<8?y+18:y-h-14)+'px'}
+document.addEventListener('pointermove',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el)showTip(el,e.clientX,e.clientY);else if(e.pointerType==='mouse')tip.classList.remove('on')});
+document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el)showTip(el,e.clientX,e.clientY);else tip.classList.remove('on')});
+window.addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
+
+/* ---------- SETTINGS ---------- */
+$('#copyBackup').onclick=async()=>{const t=JSON.stringify(S);$('#backupBox').value=t;try{await navigator.clipboard.writeText(t);toast('Backup copied')}catch(e){$('#backupBox').select();toast('Backup shown below — copy it')}};
+function restoreText(txt){try{const o=JSON.parse(txt);if(!o||typeof o!=='object'||!o.status)throw 0;S=merge(DEFAULT(),o);save();flush();toast('Backup restored');return true}catch(e){toast('That doesn\'t look like a backup');return false}}
+$('#restoreBackup').onclick=()=>restoreText($('#backupBox').value);
+$('#saveFile').onclick=async()=>{
+  const name='lbx-backup-'+today()+'.json', txt=JSON.stringify(S,null,1);
+  try{
+    const file=new File([txt],name,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'My LBX backup'});return}
+  }catch(e){if(e&&e.name==='AbortError')return}
+  try{const url=URL.createObjectURL(new Blob([txt],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);toast('Backup file saved')}
+  catch(e){$('#backupBox').value=JSON.stringify(S);toast('Couldn\'t save a file — backup shown in the box')}
+};
+$('#openFile').onclick=()=>{$('#fileIn').value='';$('#fileIn').click()};
+$('#fileIn').onchange=()=>{const f=$('#fileIn').files[0];if(!f)return;const r=new FileReader();r.onload=()=>restoreText(String(r.result||''));r.onerror=()=>toast('Couldn\'t read that file');r.readAsText(f)};
+let resetArmed=false;$('#resetAll').onclick=()=>{if(!resetArmed){resetArmed=true;$('#resetAll').textContent='Tap again to erase everything';setTimeout(()=>{resetArmed=false;$('#resetAll').textContent='Erase all data'},4000);return}S=DEFAULT();save();resetArmed=false;$('#resetAll').textContent='Erase all data';toast('All data erased')};
+
+let tT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),1800)}
+
+const h=(location.hash||'').slice(1); render(); if(h&&(LOGS[h]||['info','maint','settings','insights'].includes(h)))show(h);
+window.addEventListener('hashchange',()=>{const v=location.hash.slice(1)||'home';if(v!==current&&(LOGS[v]||['home','info','maint','settings','insights'].includes(v)))show(v)});
+
+/* ---------- OFFLINE / SERVICE WORKER ---------- */
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
+  const hadController=!!navigator.serviceWorker.controller;
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(reg=>{
+      reg.addEventListener('updatefound',()=>{const w=reg.installing;if(!w)return;
+        w.addEventListener('statechange',()=>{if(w.state==='activated'&&hadController)toast('App updated — close and reopen to load it')})});
+    }).catch(err=>console.warn('Offline support unavailable:',err));
+  });
+}
+})();
+</script>
+</body>
+</html>
